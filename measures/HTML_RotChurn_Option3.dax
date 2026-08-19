@@ -1,0 +1,180 @@
+HTML_RotChurn_Option3 =
+VAR pxMax = 148
+VAR allKW = CALCULATETABLE ( VALUES ( DateTimeTable[Year_Week_NUM] ), ALL ( DateTimeTable[Year_Week_NUM] ) )
+VAR matureKW =
+    FILTER ( allKW,
+        VAR k = DateTimeTable[Year_Week_NUM]
+        VAR we = DATE ( INT ( k / 100 ), 1, 1 ) + MOD ( k, 100 ) * 7
+        VAR t = CALCULATE ( [NC Gesamt], ALL ( DateTimeTable[Year_Week_NUM] ), DateTimeTable[Year_Week_NUM] = k )
+        RETURN t > 0 && we + 30 <= TODAY () )
+VAR kwList = TOPN ( 6, matureKW, DateTimeTable[Year_Week_NUM], DESC )
+VAR lastKW = MAXX ( kwList, DateTimeTable[Year_Week_NUM] )
+VAR cnt = COUNTROWS ( kwList )
+VAR tbl =
+    ADDCOLUMNS ( kwList,
+        "@t", VAR k = DateTimeTable[Year_Week_NUM] RETURN CALCULATE ( [NC Gesamt], ALL ( DateTimeTable[Year_Week_NUM] ), DateTimeTable[Year_Week_NUM] = k ),
+        "@b", VAR k = DateTimeTable[Year_Week_NUM] RETURN CALCULATE ( [Basis_Gesamt], ALL ( DateTimeTable[Year_Week_NUM] ), DateTimeTable[Year_Week_NUM] = k ),
+        "@r", VAR k = DateTimeTable[Year_Week_NUM] RETURN CALCULATE ( [BBI_Gekuendigt_nach_Cube], ALL ( DateTimeTable[Year_Week_NUM] ), DateTimeTable[Year_Week_NUM] = k ) )
+VAR maxTot = MAXX ( tbl, [@t] )
+VAR sumTot = SUMX ( tbl, [@t] )
+VAR sumBas = SUMX ( tbl, [@b] )
+VAR sumRot = SUMX ( tbl, [@r] )
+VAR sumKeep = sumBas - sumRot
+
+-- ===== NEU ggü. Option2: KPI-Kopfzeile mit Trend =====
+VAR minChurn = MINX ( tbl, DIVIDE ( [@r], [@t] ) )
+VAR maxChurn = MAXX ( tbl, DIVIDE ( [@r], [@t] ) )
+VAR rangeChurn = MAX ( maxChurn - minChurn, 0.0001 )
+VAR secondLastKW = MAXX ( FILTER ( kwList, DateTimeTable[Year_Week_NUM] <> lastKW ), DateTimeTable[Year_Week_NUM] )
+VAR lastR = MAXX ( FILTER ( tbl, DateTimeTable[Year_Week_NUM] = lastKW ), [@r] )
+VAR lastT = MAXX ( FILTER ( tbl, DateTimeTable[Year_Week_NUM] = lastKW ), [@t] )
+VAR wowR = MAXX ( FILTER ( tbl, DateTimeTable[Year_Week_NUM] = secondLastKW ), [@r] )
+VAR wowT = MAXX ( FILTER ( tbl, DateTimeTable[Year_Week_NUM] = secondLastKW ), [@t] )
+VAR lastChurnPct = DIVIDE ( lastR, lastT )
+VAR wowChurnPct = DIVIDE ( wowR, wowT )
+VAR deltaWowPP = ( lastChurnPct - wowChurnPct ) * 100
+VAR avgChurnPct = DIVIDE ( sumRot, sumBas )
+VAR avgKeepPct = DIVIDE ( sumKeep, sumBas )
+VAR trendFlat = ABS ( deltaWowPP ) <= 0.05
+VAR trendUp = deltaWowPP > 0.05
+VAR trendColor = IF ( trendFlat, "#8a8a86", IF ( trendUp, "#d03b3b", "#0c8f5a" ) )
+VAR trendArrow = IF ( trendFlat, "&#8212;", IF ( trendUp, "&#9650;", "&#9660;" ) )
+VAR trendLabel = FORMAT ( ABS ( deltaWowPP ), "0.0" ) & " pp"
+VAR sparkPts =
+    CONCATENATEX ( tbl,
+        VAR churnI = DIVIDE ( [@r], [@t] )
+        VAR idx = RANKX ( tbl, DateTimeTable[Year_Week_NUM], , ASC, DENSE )
+        VAR x = DIVIDE ( idx - 1, MAX ( cnt - 1, 1 ) ) * 100
+        VAR y = 28 - DIVIDE ( churnI - minChurn, rangeChurn ) * 24
+        RETURN FORMAT ( x, "0.0" ) & "," & FORMAT ( y, "0.0" ),
+        " ", DateTimeTable[Year_Week_NUM], ASC )
+VAR sparkAreaPts = "0,28 " & sparkPts & " 100,28"
+VAR sparkLastY = 28 - DIVIDE ( lastChurnPct - minChurn, rangeChurn ) * 24
+
+-- RotChurn-Emblem (Donut-Ring + Kern) für die Überschrift
+VAR icEmblem = "<span style='display:inline-flex;filter:drop-shadow(0 2px 3px rgba(0,0,0,.18))'><svg width='30' height='30' viewBox='0 0 48 48'><defs><linearGradient id='gKern3' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='#2a78d6'/><stop offset='1' stop-color='#154b8c'/></linearGradient><linearGradient id='gRing3' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='#d03b3b'/><stop offset='1' stop-color='#8f2323'/></linearGradient></defs><circle cx='24' cy='24' r='18' fill='none' stroke='#EEECEA' stroke-width='6'/><circle cx='24' cy='24' r='18' fill='none' stroke='url(#gRing3)' stroke-width='6' stroke-linecap='round' stroke-dasharray='62 113' transform='rotate(-90 24 24)'/><path d='M24 4 l5 5 -5 5 z' fill='#8f2323'/><circle cx='24' cy='24' r='7' fill='url(#gKern3)'/></svg></span>"
+
+VAR kpiTiles =
+    "<div class='kpis'>"
+    & "<div class='kpi'>"
+        & "<div class='kpiLbl'>&Oslash; Rotational Churn &middot; 6 KW</div>"
+        & "<div class='kpiRow'>"
+            & "<div class='kpiVal'>" & FORMAT ( avgChurnPct, "0.0%" ) & "</div>"
+            & "<div class='kpiTrend' style='color:" & trendColor & "'>" & trendArrow & " " & trendLabel & "<span class='kpiSub'>vs. Vorwoche</span></div>"
+        & "</div>"
+        & "<svg class='spark' viewBox='0 0 100 32' preserveAspectRatio='none'>"
+            & "<polygon points='" & sparkAreaPts & "' fill='#2a78d6' fill-opacity='0.12'/>"
+            & "<polyline points='" & sparkPts & "' fill='none' stroke='#a8a7a2' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/>"
+            & "<circle cx='100' cy='" & FORMAT ( sparkLastY, "0.0" ) & "' r='3' fill='#2a78d6' stroke='#fff' stroke-width='1.5'/>"
+        & "</svg>"
+    & "</div>"
+    & "<div class='kpi kpiB'>"
+        & "<div class='kpiLbl'>&Oslash; Halte-Quote &middot; 6 KW</div>"
+        & "<div class='kpiVal kpiValB'>" & FORMAT ( avgKeepPct, "0.0%" ) & "</div>"
+        & "<div class='kpiFoot'>" & FORMAT ( sumKeep, "#,##0" ) & " von " & FORMAT ( sumBas, "#,##0" ) & " BBI gehalten</div>"
+    & "</div>"
+    & "</div>"
+
+VAR compBars =
+    CONCATENATEX ( tbl,
+        VAR t = [@t] VAR b = [@b] VAR r = [@r] VAR keep = b - r VAR nbi = t - b
+        VAR kwLbl = "KW" & FORMAT ( MOD ( DateTimeTable[Year_Week_NUM], 100 ), "00" )
+        VAR cl = IF ( DateTimeTable[Year_Week_NUM] = lastKW, " cur", "" )
+        VAR hRn = ROUND ( DIVIDE ( r, maxTot ) * pxMax, 0 )
+        VAR hBn = ROUND ( DIVIDE ( keep, maxTot ) * pxMax, 0 )
+        VAR hGn = ROUND ( DIVIDE ( nbi, maxTot ) * pxMax, 0 )
+        VAR hRe = MAX ( hRn, 16 )
+        VAR hRB = hRe + hBn
+        VAR hStk = hRe + hBn + hGn
+        VAR hR = FORMAT ( hRn, "0" )
+        VAR hB = FORMAT ( hBn, "0" )
+        VAR hG = FORMAT ( hGn, "0" )
+        RETURN "<div class='bc'><div class='tot'>" & FORMAT ( t, "#,##0" ) & "</div>"
+            & "<div class='barrow'>"
+            & "<div class='stk" & cl & "'>"
+                & "<div class='sR' style='height:" & hR & "px;min-height:16px' title='" & kwLbl & " &middot; BBI gek&uuml;ndigt: " & FORMAT ( r, "#,##0" ) & "'><span class='segr'>" & FORMAT ( r, "#,##0" ) & "</span></div>"
+                & "<div class='sB' style='height:" & hB & "px' title='" & kwLbl & " &middot; BBI gehalten: " & FORMAT ( keep, "#,##0" ) & "'><span class='segb'>" & FORMAT ( keep, "#,##0" ) & "</span></div>"
+                & "<div class='sG' style='height:" & hG & "px' title='" & kwLbl & " &middot; Reinverk&auml;ufe o. BBI: " & FORMAT ( nbi, "#,##0" ) & "'><span class='segg'>" & FORMAT ( nbi, "#,##0" ) & "</span></div>"
+            & "</div>"
+            & "<div class='brk' style='height:" & FORMAT ( hStk, "0" ) & "px'><div class='brkline" & cl & "' style='height:" & FORMAT ( hRB, "0" ) & "px'></div><div class='brkpct' style='top:" & FORMAT ( hRB / 2 - 8, "0" ) & "px'>" & FORMAT ( DIVIDE ( b, t ), "0%" ) & "</div></div>"
+            & "</div></div>",
+        "", DateTimeTable[Year_Week_NUM], ASC )
+VAR compLabels =
+    CONCATENATEX ( tbl,
+        VAR kw = DateTimeTable[Year_Week_NUM] VAR t = [@t] VAR r = [@r]
+        RETURN "<div class='lb'><div class='" & IF ( kw = lastKW, "kwc", "kw" ) & "'>KW" & FORMAT ( MOD ( kw, 100 ), "00" ) & "</div><div class='rc'>" & FORMAT ( DIVIDE ( r, t ), "0.0%" ) & "</div><div class='rcl'>Rot. Churn</div></div>",
+        "", DateTimeTable[Year_Week_NUM], ASC )
+VAR tableRows =
+    CONCATENATEX ( tbl,
+        VAR kw = DateTimeTable[Year_Week_NUM] VAR t = [@t] VAR b = [@b] VAR r = [@r] VAR keep = b - r
+        VAR kwc = IF ( kw = lastKW, "<span class='kwc'>KW" & FORMAT ( MOD ( kw, 100 ), "00" ) & "</span>", "KW" & FORMAT ( MOD ( kw, 100 ), "00" ) )
+        RETURN "<tr" & IF ( kw = lastKW, " class='curRow'", "" ) & "><td class='l'>" & kwc & "</td><td class='b'>" & FORMAT ( t, "#,##0" ) & "</td><td class='cg'>" & FORMAT ( b, "#,##0" ) & " <span class='pct'>(" & FORMAT ( DIVIDE ( b, t ), "0.0%" ) & ")</span></td><td class='cB'>" & FORMAT ( keep, "#,##0" ) & "</td><td class='cR'>" & FORMAT ( r, "#,##0" ) & "</td><td class='cT'>" & FORMAT ( DIVIDE ( r, t ), "0.0%" ) & "</td><td class='cB'>" & FORMAT ( DIVIDE ( keep, b ), "0.0%" ) & "</td></tr>",
+        "", DateTimeTable[Year_Week_NUM], ASC )
+VAR tableFoot = "<tr><td class='l tf'>&Sigma; / &Oslash;</td><td class='tf'>" & FORMAT ( sumTot, "#,##0" ) & "</td><td class='tf cg'>" & FORMAT ( sumBas, "#,##0" ) & " <span class='pct'>(" & FORMAT ( DIVIDE ( sumBas, sumTot ), "0.0%" ) & ")</span></td><td class='tf cB'>" & FORMAT ( sumKeep, "#,##0" ) & "</td><td class='tf cR'>" & FORMAT ( sumRot, "#,##0" ) & "</td><td class='tf cT'>" & FORMAT ( DIVIDE ( sumRot, sumTot ), "0.0%" ) & "</td><td class='tf cB'>" & FORMAT ( DIVIDE ( sumKeep, sumBas ), "0.0%" ) & "</td></tr>"
+RETURN
+"<style>
+.kpis{display:flex;gap:10px;margin-bottom:14px}
+.kpi{flex:1;background:#fafaf9;border:1px solid #edece9;border-radius:10px;padding:10px 12px}
+.kpiB{display:flex;flex-direction:column;justify-content:center}
+.kpiLbl{font-size:9.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:#8a8a86}
+.kpiRow{display:flex;align-items:baseline;gap:8px;margin-top:2px}
+.kpiVal{font-size:22px;font-weight:700;color:#161514;font-variant-numeric:normal}
+.kpiValB{font-size:22px;font-weight:700;color:#161514;margin-top:2px}
+.kpiTrend{font-size:11px;font-weight:700}
+.kpiSub{display:block;font-size:8.5px;font-weight:600;color:#8a8a86;text-transform:none}
+.kpiFoot{font-size:9.5px;color:#8a8a86;margin-top:3px}
+.spark{width:100%;height:30px;margin-top:4px;display:block}
+.bc{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end}
+.tot{font-size:12px;font-weight:700;margin-bottom:3px;font-variant-numeric:tabular-nums}
+.barrow{width:100%;display:flex;align-items:flex-end;justify-content:center;gap:3px}
+.stk{flex:0 0 58%;display:flex;flex-direction:column;box-shadow:0 1px 3px rgba(0,0,0,.12);box-sizing:border-box}
+.stk.cur{outline:2px solid #161514;outline-offset:1px;border-radius:5px 5px 0 0}
+.brk{position:relative;flex:0 0 34px;display:flex;flex-direction:column;justify-content:flex-end}
+.brkline{position:absolute;top:0;left:0;width:6px;border:2px solid #b7791f;border-left:none;border-radius:0 5px 5px 0}
+.brkline.cur{border-color:#7a4f10}
+.brkpct{position:absolute;left:9px;font-size:11px;font-weight:800;color:#7a4f10;background:#fff8ec;border:1px solid #eddcb0;border-radius:8px;padding:0 5px;white-space:nowrap;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.sR{background:#d03b3b;display:flex;align-items:center;justify-content:center;border-radius:4px 4px 0 0;border-bottom:2px solid #fff;box-sizing:border-box}
+.segr{font-size:10px;font-weight:700;color:#fff}
+.sB{background:#2a78d6;display:flex;align-items:center;justify-content:center;border-bottom:2px solid #fff;box-sizing:border-box}
+.segb{font-size:11px;font-weight:700;color:#fff}
+.sG{background:#c9ccd1;display:flex;align-items:center;justify-content:center}
+.segg{font-size:10px;font-weight:700;color:#55565c}
+.row{display:flex;gap:10px;align-items:flex-end;height:180px}
+.lrow{display:flex;gap:10px;margin-top:6px}
+.lb{flex:1;text-align:center}
+.kw{font-size:11px;color:#8a8a86}
+.kwc{font-size:11px;color:#fff;background:#161514;font-weight:600;padding:1px 8px;border-radius:9px;display:inline-block}
+.rc{font-size:14px;font-weight:800;color:#0c8f5a;margin-top:3px;font-variant-numeric:tabular-nums}
+.rcl{font-size:8px;color:#0c7a4d;text-transform:uppercase;letter-spacing:.02em}
+.expl{background:#fafaf9;border:1px solid #edece9;border-radius:10px;padding:9px 12px;margin-bottom:12px;font-size:10px;color:#52514e;line-height:1.55}
+.expl b{color:#161514}
+.wt{width:100%;border-collapse:collapse;font-size:12px}
+.wt th{padding:7px 8px;text-align:right;font-size:9.5px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:#8a8a86;border-bottom:2px solid #edece9}
+.wt th.l{text-align:left}
+.wt td{padding:7px 8px;text-align:right;border-bottom:1px solid #f1f0ed;font-variant-numeric:tabular-nums}
+.wt td.l{text-align:left;font-weight:600;font-variant-numeric:normal}
+.wt td.b{font-weight:700}
+.wt tr:nth-child(even) td{background:#fbfbfa}
+.cR{color:#d03b3b;font-weight:700}
+.cB{color:#2a78d6;font-weight:700}
+.cT{color:#0c8f5a;font-weight:700}
+.cg{color:#52514e}
+.pct{color:#7a4f10;font-weight:700;font-size:10px}
+.curRow td{background:#f4f9f6 !important}
+.curRow td.l{box-shadow:inset 3px 0 0 #161514}
+.tf{font-weight:700;border-top:2px solid #edece9}
+</style>"
+& "<div style='background:#fff;border:1px solid #e8e6e3;border-radius:14px;padding:16px 18px;font-family:Segoe UI,Roboto,sans-serif;color:#161514'>"
+& "<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:12px'>"
+&   "<div style='display:flex;align-items:center;gap:11px'>" & icEmblem & "<span style='font-size:15px;font-weight:700'>Rotational Churn &ndash; Wochen&uuml;bersicht</span></div>"
+&   "<span style='font-size:10px;color:#8a8a86;background:#f3f2f1;padding:3px 9px;border-radius:11px'>" & FORMAT ( cnt, "0" ) & " reife Wochen</span>"
+& "</div>"
+& kpiTiles
+& "<div class='expl'>So entsteht der <b>echte Rotational Churn</b>: Ein Kunde kauft einen Cube (Neuverkauf / GrossAdd) und k&uuml;ndigt sein bestehendes <b>BBI</b> innerhalb von &plusmn;30 Tagen rund um den Kauftag. Er <b>ersetzt</b> also nur sein Produkt, statt echtes Neugesch&auml;ft zu bringen. <b>Rot</b> = diese gek&uuml;ndigten BBI &middot; <b>Blau</b> = BBI, die gehalten wurden &middot; <b>Gelbe Klammer</b> = beide zusammen (rot+blau) = alle Cube-K&auml;ufe von Bestandskunden mit BBI, als Anteil an NC Gesamt.</div>"
+& "<div style='display:flex;gap:14px;margin-bottom:8px;font-size:10px;color:#52514e;flex-wrap:wrap'><span><span style='display:inline-block;width:9px;height:9px;border-radius:2px;background:#c9ccd1'></span> Reinverk&auml;ufe o. BBI</span><span><span style='display:inline-block;width:9px;height:9px;border-radius:2px;background:#2a78d6'></span> BBI gehalten</span><span><span style='display:inline-block;width:9px;height:9px;border-radius:2px;background:#d03b3b'></span> BBI gek&uuml;ndigt</span><span style='color:#7a4f10;font-weight:700'>&#125; BBI-Anteil % (rot+blau)</span></div>"
+& "<div class='row'>" & compBars & "</div>"
+& "<div class='lrow'>" & compLabels & "</div>"
+& "<div style='font-size:11px;font-weight:700;color:#8a8a86;letter-spacing:.02em;text-transform:uppercase;margin:16px 0 6px'>Details je Woche</div>"
+& "<table class='wt'><tr><th class='l'>KW</th><th>NC Gesamt</th><th>NC mit BBI &amp; %</th><th style='color:#2a78d6'>Gehalten</th><th style='color:#d03b3b'>Gek&uuml;ndigt</th><th style='color:#0c8f5a'>Churn %</th><th style='color:#2a78d6'>Halte %</th></tr>" & tableRows & tableFoot & "</table>"
+& "<div style='font-size:9px;color:#8a8a86;margin-top:8px'>BBI-Anteil % = NC mit BBI &divide; NC Gesamt (rot+blau) &middot; Churn % = Gek&uuml;ndigt &divide; NC Gesamt &middot; Halte % = Gehalten &divide; NC mit BBI &middot; Gek&uuml;ndigt = BBI-K&uuml;ndigung &le;30 T. nach Cube-Kauf</div>"
+& "</div>"
