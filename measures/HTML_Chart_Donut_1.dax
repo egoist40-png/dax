@@ -64,10 +64,10 @@ VAR MonthAbbrLast =
 VAR yearBadge = curYear & " vs. " & prevYear & " - Jan-" & MonthAbbrLast
 
 VAR sparkVBW = 200
-VAR sparkVBH = 48
+VAR sparkVBH = 50
 VAR sparkPadX = 6
-VAR curveTop = 9
-VAR curveBottom = 29
+VAR curveTop = 12
+VAR curveBottom = 32
 VAR usableW = sparkVBW - ( 2 * sparkPadX )
 VAR usableH = curveBottom - curveTop
 VAR ptCount = MAX ( curMonth - 1, 1 )
@@ -89,6 +89,8 @@ VAR rMaxMonth = MAXX ( FILTER ( gRateList, [@rate] = rMax ), [MonthNum] )
 VAR rMinMonth = MAXX ( FILTER ( gRateList, [@rate] = rMin ), [MonthNum] )
 VAR rMaxLabelX = MIN ( MAX ( sparkPadX + ( rMaxMonth - 1 ) * DIVIDE ( usableW, ptCount ), 18 ), 182 )
 VAR rMinLabelX = MIN ( MAX ( sparkPadX + ( rMinMonth - 1 ) * DIVIDE ( usableW, ptCount ), 18 ), 182 )
+VAR rMaxIsCur = rMaxMonth = curMonth
+VAR rMinIsCur = rMinMonth = curMonth
 VAR sparkRateLastX = sparkPadX + ptCount * DIVIDE ( usableW, ptCount )
 VAR sparkRateLastY = curveTop + ( usableH - DIVIDE ( MAXX ( FILTER ( gRateList, [MonthNum] = curMonth ), [@rate] ) - rMin, rRange ) * usableH )
 VAR smoothPathRate =
@@ -131,6 +133,8 @@ VAR gMaxMonth = MAXX ( FILTER ( gGesList, [@ges] = gMax ), [MonthNum] )
 VAR gMinMonth = MAXX ( FILTER ( gGesList, [@ges] = gMin ), [MonthNum] )
 VAR gMaxLabelX = MIN ( MAX ( sparkPadX + ( gMaxMonth - 1 ) * DIVIDE ( usableW, ptCount ), 18 ), 182 )
 VAR gMinLabelX = MIN ( MAX ( sparkPadX + ( gMinMonth - 1 ) * DIVIDE ( usableW, ptCount ), 18 ), 182 )
+VAR gMaxIsCur = gMaxMonth = curMonth
+VAR gMinIsCur = gMinMonth = curMonth
 VAR sparkGesLastX = sparkRateLastX
 VAR sparkGesLastY = curveTop + ( usableH - DIVIDE ( MAXX ( FILTER ( gGesList, [MonthNum] = curMonth ), [@ges] ) - gMin, gRange ) * usableH )
 VAR smoothPathGes =
@@ -309,7 +313,7 @@ RETURN
 &   "<div style=" & UNICHAR(34) & "flex:1;padding:10px 12px;border-radius:8px;background:#5b8db8;color:#fff" & UNICHAR(34) & ">"
 &     "<span style=" & UNICHAR(34) & "display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;margin-bottom:6px" & UNICHAR(34) & ">" & icChart & "NC Gesamt YTD</span>"
 &     "<div style=" & UNICHAR(34) & "font-size:18px;font-weight:700;margin-bottom:2px" & UNICHAR(34) & ">" & FORMAT ( sumGCur, "#,##0" ) & " <span style=" & UNICHAR(34) & "font-size:11px;font-weight:600;opacity:.9" & UNICHAR(34) & ">" & arDG & " " & deltaG & " vs. VJ</span></div>"
-&     "<svg viewBox=" & UNICHAR(34) & "0 0 " & sparkVBW & " " & sparkVBH & UNICHAR(34) & " style=" & UNICHAR(34) & "width:100%;height:46px;display:block;margin:4px 0 2px" & UNICHAR(34) & ">"
+&     "<svg viewBox=" & UNICHAR(34) & "0 0 " & sparkVBW & " " & sparkVBH & UNICHAR(34) & " style=" & UNICHAR(34) & "width:100%;height:48px;display:block;margin:4px 0 2px" & UNICHAR(34) & ">"
 &       "<defs>"
 &         "<linearGradient id=" & UNICHAR(34) & "gAreaGes" & UNICHAR(34) & " x1=" & UNICHAR(34) & "0" & UNICHAR(34) & " y1=" & UNICHAR(34) & "0" & UNICHAR(34) & " x2=" & UNICHAR(34) & "0" & UNICHAR(34) & " y2=" & UNICHAR(34) & "1" & UNICHAR(34) & "><stop offset=" & UNICHAR(34) & "0" & UNICHAR(34) & " stop-color=" & UNICHAR(34) & "#ffffff" & UNICHAR(34) & " stop-opacity=" & UNICHAR(34) & "0.4" & UNICHAR(34) & "/><stop offset=" & UNICHAR(34) & "1" & UNICHAR(34) & " stop-color=" & UNICHAR(34) & "#ffffff" & UNICHAR(34) & " stop-opacity=" & UNICHAR(34) & "0" & UNICHAR(34) & "/></linearGradient>"
 &         "<filter id=" & UNICHAR(34) & "fGlowGes" & UNICHAR(34) & " x=" & UNICHAR(34) & "-20%" & UNICHAR(34) & " y=" & UNICHAR(34) & "-60%" & UNICHAR(34) & " width=" & UNICHAR(34) & "140%" & UNICHAR(34) & " height=" & UNICHAR(34) & "220%" & UNICHAR(34) & "><feGaussianBlur stdDeviation=" & UNICHAR(34) & "1.1" & UNICHAR(34) & " result=" & UNICHAR(34) & "b" & UNICHAR(34) & "/><feMerge><feMergeNode in=" & UNICHAR(34) & "b" & UNICHAR(34) & "/><feMergeNode in=" & UNICHAR(34) & "SourceGraphic" & UNICHAR(34) & "/></feMerge></filter>"
@@ -318,10 +322,10 @@ RETURN
 &       "<line x1=" & UNICHAR(34) & FORMAT ( sparkPadX, "0" ) & UNICHAR(34) & " y1=" & UNICHAR(34) & FORMAT ( curveBottom, "0" ) & UNICHAR(34) & " x2=" & UNICHAR(34) & FORMAT ( sparkPadX + usableW, "0" ) & UNICHAR(34) & " y2=" & UNICHAR(34) & FORMAT ( curveBottom, "0" ) & UNICHAR(34) & " stroke=" & UNICHAR(34) & "rgba(255,255,255,.18)" & UNICHAR(34) & " stroke-width=" & UNICHAR(34) & "1" & UNICHAR(34) & "/>"
 &       "<path d=" & UNICHAR(34) & areaPathGes & UNICHAR(34) & " fill=" & UNICHAR(34) & "url(#gAreaGes)" & UNICHAR(34) & " stroke=" & UNICHAR(34) & "none" & UNICHAR(34) & "/>"
 &       "<path d=" & UNICHAR(34) & smoothPathGes & UNICHAR(34) & " fill=" & UNICHAR(34) & "none" & UNICHAR(34) & " stroke=" & UNICHAR(34) & "#fff" & UNICHAR(34) & " stroke-width=" & UNICHAR(34) & "2.2" & UNICHAR(34) & " stroke-linecap=" & UNICHAR(34) & "round" & UNICHAR(34) & " stroke-linejoin=" & UNICHAR(34) & "round" & UNICHAR(34) & " filter=" & UNICHAR(34) & "url(#fGlowGes)" & UNICHAR(34) & "/>"
-&       "<text x=" & UNICHAR(34) & FORMAT ( gMaxLabelX, "0.0" ) & UNICHAR(34) & " y=" & UNICHAR(34) & FORMAT ( curveTop - 3, "0" ) & UNICHAR(34) & " text-anchor=" & UNICHAR(34) & "middle" & UNICHAR(34) & " font-size=" & UNICHAR(34) & "9" & UNICHAR(34) & " font-weight=" & UNICHAR(34) & "700" & UNICHAR(34) & " fill=" & UNICHAR(34) & "#fff" & UNICHAR(34) & ">" & FORMAT ( gMax, "#,##0" ) & "</text>"
-&       "<text x=" & UNICHAR(34) & FORMAT ( gMinLabelX, "0.0" ) & UNICHAR(34) & " y=" & UNICHAR(34) & FORMAT ( curveBottom + 9, "0" ) & UNICHAR(34) & " text-anchor=" & UNICHAR(34) & "middle" & UNICHAR(34) & " font-size=" & UNICHAR(34) & "9" & UNICHAR(34) & " font-weight=" & UNICHAR(34) & "600" & UNICHAR(34) & " fill=" & UNICHAR(34) & "rgba(255,255,255,.8)" & UNICHAR(34) & ">" & FORMAT ( gMin, "#,##0" ) & "</text>"
-&       "<text x=" & UNICHAR(34) & FORMAT ( sparkPadX, "0" ) & UNICHAR(34) & " y=" & UNICHAR(34) & "46" & UNICHAR(34) & " text-anchor=" & UNICHAR(34) & "start" & UNICHAR(34) & " font-size=" & UNICHAR(34) & "8" & UNICHAR(34) & " font-weight=" & UNICHAR(34) & "600" & UNICHAR(34) & " fill=" & UNICHAR(34) & "rgba(255,255,255,.6)" & UNICHAR(34) & ">Jan</text>"
-&       "<text x=" & UNICHAR(34) & FORMAT ( sparkGesLastX, "0.0" ) & UNICHAR(34) & " y=" & UNICHAR(34) & "46" & UNICHAR(34) & " text-anchor=" & UNICHAR(34) & "end" & UNICHAR(34) & " font-size=" & UNICHAR(34) & "8" & UNICHAR(34) & " font-weight=" & UNICHAR(34) & "600" & UNICHAR(34) & " fill=" & UNICHAR(34) & "rgba(255,255,255,.6)" & UNICHAR(34) & ">" & MonthAbbrLast & "</text>"
+&       IF ( NOT gMaxIsCur, "<text x=" & UNICHAR(34) & FORMAT ( gMaxLabelX, "0.0" ) & UNICHAR(34) & " y=" & UNICHAR(34) & FORMAT ( curveTop - 4, "0" ) & UNICHAR(34) & " text-anchor=" & UNICHAR(34) & "middle" & UNICHAR(34) & " font-size=" & UNICHAR(34) & "9" & UNICHAR(34) & " font-weight=" & UNICHAR(34) & "700" & UNICHAR(34) & " fill=" & UNICHAR(34) & "#fff" & UNICHAR(34) & ">" & FORMAT ( gMax, "#,##0" ) & "</text>", "" )
+&       IF ( NOT gMinIsCur, "<text x=" & UNICHAR(34) & FORMAT ( gMinLabelX, "0.0" ) & UNICHAR(34) & " y=" & UNICHAR(34) & FORMAT ( curveBottom + 9, "0" ) & UNICHAR(34) & " text-anchor=" & UNICHAR(34) & "middle" & UNICHAR(34) & " font-size=" & UNICHAR(34) & "9" & UNICHAR(34) & " font-weight=" & UNICHAR(34) & "600" & UNICHAR(34) & " fill=" & UNICHAR(34) & "rgba(255,255,255,.8)" & UNICHAR(34) & ">" & FORMAT ( gMin, "#,##0" ) & "</text>", "" )
+&       "<text x=" & UNICHAR(34) & FORMAT ( sparkPadX, "0" ) & UNICHAR(34) & " y=" & UNICHAR(34) & "47" & UNICHAR(34) & " text-anchor=" & UNICHAR(34) & "start" & UNICHAR(34) & " font-size=" & UNICHAR(34) & "8" & UNICHAR(34) & " font-weight=" & UNICHAR(34) & "600" & UNICHAR(34) & " fill=" & UNICHAR(34) & "rgba(255,255,255,.6)" & UNICHAR(34) & ">Jan</text>"
+&       "<text x=" & UNICHAR(34) & FORMAT ( sparkGesLastX, "0.0" ) & UNICHAR(34) & " y=" & UNICHAR(34) & "47" & UNICHAR(34) & " text-anchor=" & UNICHAR(34) & "end" & UNICHAR(34) & " font-size=" & UNICHAR(34) & "8" & UNICHAR(34) & " font-weight=" & UNICHAR(34) & "600" & UNICHAR(34) & " fill=" & UNICHAR(34) & "rgba(255,255,255,.6)" & UNICHAR(34) & ">" & MonthAbbrLast & "</text>"
 &       "<circle cx=" & UNICHAR(34) & FORMAT ( sparkGesLastX, "0.0" ) & UNICHAR(34) & " cy=" & UNICHAR(34) & FORMAT ( sparkGesLastY, "0.0" ) & UNICHAR(34) & " r=" & UNICHAR(34) & "7" & UNICHAR(34) & " fill=" & UNICHAR(34) & "#fff" & UNICHAR(34) & " fill-opacity=" & UNICHAR(34) & "0.22" & UNICHAR(34) & "/>"
 &       "<circle cx=" & UNICHAR(34) & FORMAT ( sparkGesLastX, "0.0" ) & UNICHAR(34) & " cy=" & UNICHAR(34) & FORMAT ( sparkGesLastY, "0.0" ) & UNICHAR(34) & " r=" & UNICHAR(34) & "4" & UNICHAR(34) & " fill=" & UNICHAR(34) & "#fff" & UNICHAR(34) & " stroke=" & UNICHAR(34) & "#2f5a82" & UNICHAR(34) & " stroke-width=" & UNICHAR(34) & "1.4" & UNICHAR(34) & "/>"
 &     "</svg>"
@@ -330,7 +334,7 @@ RETURN
 &   "<div style=" & UNICHAR(34) & "flex:1;padding:10px 12px;border-radius:8px;background:#c0392b;color:#fff" & UNICHAR(34) & ">"
 &     "<span style=" & UNICHAR(34) & "display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;margin-bottom:6px" & UNICHAR(34) & ">" & icAlert & "BBI-Anteil YTD</span>"
 &     "<div style=" & UNICHAR(34) & "font-size:18px;font-weight:700;margin-bottom:2px" & UNICHAR(34) & ">" & FORMAT ( rateCur, "0%" ) & " <span style=" & UNICHAR(34) & "font-size:11px;font-weight:600;opacity:.9" & UNICHAR(34) & ">" & arDB & " " & deltaB & " vs. VJ</span></div>"
-&     "<svg viewBox=" & UNICHAR(34) & "0 0 " & sparkVBW & " " & sparkVBH & UNICHAR(34) & " style=" & UNICHAR(34) & "width:100%;height:46px;display:block;margin:4px 0 2px" & UNICHAR(34) & ">"
+&     "<svg viewBox=" & UNICHAR(34) & "0 0 " & sparkVBW & " " & sparkVBH & UNICHAR(34) & " style=" & UNICHAR(34) & "width:100%;height:48px;display:block;margin:4px 0 2px" & UNICHAR(34) & ">"
 &       "<defs>"
 &         "<linearGradient id=" & UNICHAR(34) & "gAreaRate" & UNICHAR(34) & " x1=" & UNICHAR(34) & "0" & UNICHAR(34) & " y1=" & UNICHAR(34) & "0" & UNICHAR(34) & " x2=" & UNICHAR(34) & "0" & UNICHAR(34) & " y2=" & UNICHAR(34) & "1" & UNICHAR(34) & "><stop offset=" & UNICHAR(34) & "0" & UNICHAR(34) & " stop-color=" & UNICHAR(34) & "#ffffff" & UNICHAR(34) & " stop-opacity=" & UNICHAR(34) & "0.4" & UNICHAR(34) & "/><stop offset=" & UNICHAR(34) & "1" & UNICHAR(34) & " stop-color=" & UNICHAR(34) & "#ffffff" & UNICHAR(34) & " stop-opacity=" & UNICHAR(34) & "0" & UNICHAR(34) & "/></linearGradient>"
 &         "<filter id=" & UNICHAR(34) & "fGlowRate" & UNICHAR(34) & " x=" & UNICHAR(34) & "-20%" & UNICHAR(34) & " y=" & UNICHAR(34) & "-60%" & UNICHAR(34) & " width=" & UNICHAR(34) & "140%" & UNICHAR(34) & " height=" & UNICHAR(34) & "220%" & UNICHAR(34) & "><feGaussianBlur stdDeviation=" & UNICHAR(34) & "1.1" & UNICHAR(34) & " result=" & UNICHAR(34) & "b" & UNICHAR(34) & "/><feMerge><feMergeNode in=" & UNICHAR(34) & "b" & UNICHAR(34) & "/><feMergeNode in=" & UNICHAR(34) & "SourceGraphic" & UNICHAR(34) & "/></feMerge></filter>"
@@ -339,10 +343,10 @@ RETURN
 &       "<line x1=" & UNICHAR(34) & FORMAT ( sparkPadX, "0" ) & UNICHAR(34) & " y1=" & UNICHAR(34) & FORMAT ( curveBottom, "0" ) & UNICHAR(34) & " x2=" & UNICHAR(34) & FORMAT ( sparkPadX + usableW, "0" ) & UNICHAR(34) & " y2=" & UNICHAR(34) & FORMAT ( curveBottom, "0" ) & UNICHAR(34) & " stroke=" & UNICHAR(34) & "rgba(255,255,255,.18)" & UNICHAR(34) & " stroke-width=" & UNICHAR(34) & "1" & UNICHAR(34) & "/>"
 &       "<path d=" & UNICHAR(34) & areaPathRate & UNICHAR(34) & " fill=" & UNICHAR(34) & "url(#gAreaRate)" & UNICHAR(34) & " stroke=" & UNICHAR(34) & "none" & UNICHAR(34) & "/>"
 &       "<path d=" & UNICHAR(34) & smoothPathRate & UNICHAR(34) & " fill=" & UNICHAR(34) & "none" & UNICHAR(34) & " stroke=" & UNICHAR(34) & "#fff" & UNICHAR(34) & " stroke-width=" & UNICHAR(34) & "2.2" & UNICHAR(34) & " stroke-linecap=" & UNICHAR(34) & "round" & UNICHAR(34) & " stroke-linejoin=" & UNICHAR(34) & "round" & UNICHAR(34) & " filter=" & UNICHAR(34) & "url(#fGlowRate)" & UNICHAR(34) & "/>"
-&       "<text x=" & UNICHAR(34) & FORMAT ( rMaxLabelX, "0.0" ) & UNICHAR(34) & " y=" & UNICHAR(34) & FORMAT ( curveTop - 3, "0" ) & UNICHAR(34) & " text-anchor=" & UNICHAR(34) & "middle" & UNICHAR(34) & " font-size=" & UNICHAR(34) & "9" & UNICHAR(34) & " font-weight=" & UNICHAR(34) & "700" & UNICHAR(34) & " fill=" & UNICHAR(34) & "#fff" & UNICHAR(34) & ">" & FORMAT ( rMax, "0.0%" ) & "</text>"
-&       "<text x=" & UNICHAR(34) & FORMAT ( rMinLabelX, "0.0" ) & UNICHAR(34) & " y=" & UNICHAR(34) & FORMAT ( curveBottom + 9, "0" ) & UNICHAR(34) & " text-anchor=" & UNICHAR(34) & "middle" & UNICHAR(34) & " font-size=" & UNICHAR(34) & "9" & UNICHAR(34) & " font-weight=" & UNICHAR(34) & "600" & UNICHAR(34) & " fill=" & UNICHAR(34) & "rgba(255,255,255,.8)" & UNICHAR(34) & ">" & FORMAT ( rMin, "0.0%" ) & "</text>"
-&       "<text x=" & UNICHAR(34) & FORMAT ( sparkPadX, "0" ) & UNICHAR(34) & " y=" & UNICHAR(34) & "46" & UNICHAR(34) & " text-anchor=" & UNICHAR(34) & "start" & UNICHAR(34) & " font-size=" & UNICHAR(34) & "8" & UNICHAR(34) & " font-weight=" & UNICHAR(34) & "600" & UNICHAR(34) & " fill=" & UNICHAR(34) & "rgba(255,255,255,.6)" & UNICHAR(34) & ">Jan</text>"
-&       "<text x=" & UNICHAR(34) & FORMAT ( sparkRateLastX, "0.0" ) & UNICHAR(34) & " y=" & UNICHAR(34) & "46" & UNICHAR(34) & " text-anchor=" & UNICHAR(34) & "end" & UNICHAR(34) & " font-size=" & UNICHAR(34) & "8" & UNICHAR(34) & " font-weight=" & UNICHAR(34) & "600" & UNICHAR(34) & " fill=" & UNICHAR(34) & "rgba(255,255,255,.6)" & UNICHAR(34) & ">" & MonthAbbrLast & "</text>"
+&       IF ( NOT rMaxIsCur, "<text x=" & UNICHAR(34) & FORMAT ( rMaxLabelX, "0.0" ) & UNICHAR(34) & " y=" & UNICHAR(34) & FORMAT ( curveTop - 4, "0" ) & UNICHAR(34) & " text-anchor=" & UNICHAR(34) & "middle" & UNICHAR(34) & " font-size=" & UNICHAR(34) & "9" & UNICHAR(34) & " font-weight=" & UNICHAR(34) & "700" & UNICHAR(34) & " fill=" & UNICHAR(34) & "#fff" & UNICHAR(34) & ">" & FORMAT ( rMax, "0.0%" ) & "</text>", "" )
+&       IF ( NOT rMinIsCur, "<text x=" & UNICHAR(34) & FORMAT ( rMinLabelX, "0.0" ) & UNICHAR(34) & " y=" & UNICHAR(34) & FORMAT ( curveBottom + 9, "0" ) & UNICHAR(34) & " text-anchor=" & UNICHAR(34) & "middle" & UNICHAR(34) & " font-size=" & UNICHAR(34) & "9" & UNICHAR(34) & " font-weight=" & UNICHAR(34) & "600" & UNICHAR(34) & " fill=" & UNICHAR(34) & "rgba(255,255,255,.8)" & UNICHAR(34) & ">" & FORMAT ( rMin, "0.0%" ) & "</text>", "" )
+&       "<text x=" & UNICHAR(34) & FORMAT ( sparkPadX, "0" ) & UNICHAR(34) & " y=" & UNICHAR(34) & "47" & UNICHAR(34) & " text-anchor=" & UNICHAR(34) & "start" & UNICHAR(34) & " font-size=" & UNICHAR(34) & "8" & UNICHAR(34) & " font-weight=" & UNICHAR(34) & "600" & UNICHAR(34) & " fill=" & UNICHAR(34) & "rgba(255,255,255,.6)" & UNICHAR(34) & ">Jan</text>"
+&       "<text x=" & UNICHAR(34) & FORMAT ( sparkRateLastX, "0.0" ) & UNICHAR(34) & " y=" & UNICHAR(34) & "47" & UNICHAR(34) & " text-anchor=" & UNICHAR(34) & "end" & UNICHAR(34) & " font-size=" & UNICHAR(34) & "8" & UNICHAR(34) & " font-weight=" & UNICHAR(34) & "600" & UNICHAR(34) & " fill=" & UNICHAR(34) & "rgba(255,255,255,.6)" & UNICHAR(34) & ">" & MonthAbbrLast & "</text>"
 &       "<circle cx=" & UNICHAR(34) & FORMAT ( sparkRateLastX, "0.0" ) & UNICHAR(34) & " cy=" & UNICHAR(34) & FORMAT ( sparkRateLastY, "0.0" ) & UNICHAR(34) & " r=" & UNICHAR(34) & "7" & UNICHAR(34) & " fill=" & UNICHAR(34) & "#fff" & UNICHAR(34) & " fill-opacity=" & UNICHAR(34) & "0.22" & UNICHAR(34) & "/>"
 &       "<circle cx=" & UNICHAR(34) & FORMAT ( sparkRateLastX, "0.0" ) & UNICHAR(34) & " cy=" & UNICHAR(34) & FORMAT ( sparkRateLastY, "0.0" ) & UNICHAR(34) & " r=" & UNICHAR(34) & "4" & UNICHAR(34) & " fill=" & UNICHAR(34) & "#fff" & UNICHAR(34) & " stroke=" & UNICHAR(34) & "#7a1a1a" & UNICHAR(34) & " stroke-width=" & UNICHAR(34) & "1.4" & UNICHAR(34) & "/>"
 &     "</svg>"
